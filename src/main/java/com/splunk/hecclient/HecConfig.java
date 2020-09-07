@@ -34,6 +34,9 @@ public final class HecConfig {
     private boolean hasCustomTrustStore = false;
     private String trustStorePath;
     private String trustStorePassword;
+    private String kerberosPrincipal;
+    private String kerberosUser;
+    private String kerberosKeytabLocation;
 
     public HecConfig(List<String> uris, String token) {
         this.uris = uris;
@@ -152,6 +155,33 @@ public final class HecConfig {
 
     public HecConfig setHasCustomTrustStore(boolean hasStore) {
         hasCustomTrustStore = hasStore;
+        return this;
+    }
+
+    public String kerberosPrincipal() {
+        return kerberosPrincipal;
+    }
+
+    public HecConfig setKerberosPrincipal(String kerberosPrincipal) {
+        this.kerberosPrincipal = kerberosPrincipal;
+        return this;
+    }
+
+    public String kerberosUser() {
+        return kerberosUser;
+    }
+
+    public HecConfig setKerberosUser(String kerberosUser) {
+        this.kerberosUser = kerberosUser;
+        return this;
+    }
+
+    public String kerberosKeytabLocation() {
+        return kerberosKeytabLocation;
+    }
+
+    public HecConfig setKerberosKeytabLocation(String kerberosKeytabLocation) {
+        this.kerberosKeytabLocation = kerberosKeytabLocation;
         return this;
     }
 

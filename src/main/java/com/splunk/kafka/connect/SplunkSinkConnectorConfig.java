@@ -17,7 +17,6 @@ package com.splunk.kafka.connect;
 
 import com.splunk.hecclient.HecConfig;
 import org.apache.kafka.common.config.ConfigException;
-import org.apache.kafka.common.config.types.Password;
 import org.apache.kafka.connect.sink.SinkConnector;
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
@@ -212,9 +211,9 @@ public final class SplunkSinkConnectorConfig extends AbstractConfig {
     final String headerSourcetype;
     final String headerHost;
 
-    static String kerberosPrincipal;
-    static String kerberosUser;
-    static String kerberosKeytabLocation;
+    final String kerberosPrincipal;
+    final String kerberosUser;
+    final String kerberosKeytabLocation;
 
     SplunkSinkConnectorConfig(Map<String, String> taskConfig) {
         super(conf(), taskConfig);
@@ -311,7 +310,10 @@ public final class SplunkSinkConnectorConfig extends AbstractConfig {
               .setEnableChannelTracking(trackData)
               .setTrustStorePath(trustStorePath)
               .setTrustStorePassword(trustStorePassword)
-              .setHasCustomTrustStore(hasTrustStorePath);
+              .setHasCustomTrustStore(hasTrustStorePath)
+              .setKerberosPrincipal(kerberosPrincipal)
+              .setKerberosUser(kerberosUser)
+              .setKerberosKeytabLocation(kerberosKeytabLocation);
         return config;
     }
 
@@ -423,17 +425,5 @@ public final class SplunkSinkConnectorConfig extends AbstractConfig {
             idx += 1;
         }
         return metaMap;
-    }
-
-    public static String kerberosPrincipal() {
-        return kerberosPrincipal;
-    }
-
-    public static String kerberosUser() {
-        return kerberosUser;
-    }
-
-    public static String kerberosKeytabLocation() {
-        return kerberosKeytabLocation;
     }
 }

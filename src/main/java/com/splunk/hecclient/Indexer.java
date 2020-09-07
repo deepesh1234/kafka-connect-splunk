@@ -45,6 +45,7 @@ import java.util.Set;
 final class Indexer implements IndexerInf {
     private static final Logger log = LoggerFactory.getLogger(Indexer.class);
 
+    private HecConfig hecConfig;
     private CloseableHttpClient httpClient;
     private HttpContext context;
     private String baseUrl;
@@ -58,14 +59,19 @@ final class Indexer implements IndexerInf {
     private long backPressureThreshhold = 60 * 1000; // 1 min
 
     // Indexer doesn't own client, ack poller
-    public Indexer(String baseUrl, String hecToken, CloseableHttpClient client, Poller poller) {
+    public Indexer(
+        String baseUrl,
+        String hecToken,
+        CloseableHttpClient client,
+        Poller poller,
+        HecConfig config) {
         this.httpClient = client;
         this.baseUrl = baseUrl;
         this.hecToken = hecToken;
         this.poller = poller;
         this.context = HttpClientContext.create();
         backPressure = 0;
-
+        this.hecConfig = config;
         channel = new HecChannel(this);
 
         // Init headers
@@ -148,7 +154,7 @@ final class Indexer implements IndexerInf {
     @Override
     public synchronized String executeHttpRequest(final HttpUriRequest req) {
         CloseableHttpResponse resp;
-        if (!SplunkSinkConnectorConfig.kerberosPrincipal().isEmpty()) {
+        if (!hecConfig.kerberosPrincipal().isEmpty()) {
             Configuration config = new Configuration() {
                 @SuppressWarnings("serial")
                 @Override
@@ -158,11 +164,11 @@ final class Indexer implements IndexerInf {
                         {
                             put("useTicketCache", "false");
                             put("useKeyTab", "true");
-                            put("keyTab", SplunkSinkConnectorConfig.kerberosKeytabLocation());
+                            put("keyTab", hecConfig.kerberosKeytabLocation());
                             //Krb5 in GSS API needs to be refreshed so it does not throw the error
                             //Specified version of key is not available
                             put("refreshKrb5Config", "true");
-                            put("principal", SplunkSinkConnectorConfig.kerberosPrincipal());
+                            put("principal", hecConfig.kerberosPrincipal());
                             put("storeKey", "false");
                             put("doNotPrompt", "true");
                             put("isInitiator", "true");
@@ -172,7 +178,7 @@ final class Indexer implements IndexerInf {
                 }
             };
             Set<Principal> princ = new HashSet<Principal>(1);
-            princ.add(new KerberosPrincipal(SplunkSinkConnectorConfig.kerberosUser()));
+            princ.add(new KerberosPrincipal(hecConfig.kerberosUser()));
             Subject sub = new Subject(false, princ, new HashSet<Object>(), new HashSet<Object>());
             try {
                 LoginContext lc = new LoginContext("", sub, null, config);
