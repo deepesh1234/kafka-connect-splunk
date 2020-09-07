@@ -15,6 +15,7 @@
  */
 package com.splunk.hecclient;
 
+import com.splunk.kafka.connect.SplunkSinkConnectorConfig;
 import org.apache.http.impl.client.CloseableHttpClient;
 
 import java.io.FileInputStream;
@@ -264,6 +265,20 @@ public class Hec implements HecInf {
     public static CloseableHttpClient createHttpClient(final HecConfig config) {
         int poolSizePerDest = config.getMaxHttpConnectionPerChannel();
 
+        if (!SplunkSinkConnectorConfig.kerberosPrincipal().isEmpty()
+            && !SplunkSinkConnectorConfig.kerberosKeytabLocation().isEmpty()
+            && !SplunkSinkConnectorConfig.kerberosUser().isEmpty()
+        ) {
+          try {
+            return (CloseableHttpClient) new HttpClientBuilder().buildKerberosClient();
+          } catch (KeyStoreException e) {
+            e.printStackTrace();
+          } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+          } catch (KeyManagementException e) {
+            e.printStackTrace();
+          }
+        }
         // Code block for default client construction
         if(!config.getHasCustomTrustStore() &&
            StringUtils.isBlank(config.getTrustStorePath()) &&

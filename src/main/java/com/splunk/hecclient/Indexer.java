@@ -15,8 +15,10 @@
  */
 package com.splunk.hecclient;
 
+import com.splunk.kafka.connect.SplunkSinkConnectorConfig;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.protocol.HttpClientContext;
@@ -28,8 +30,17 @@ import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.security.auth.Subject;
+import javax.security.auth.kerberos.KerberosPrincipal;
+import javax.security.auth.login.AppConfigurationEntry;
+import javax.security.auth.login.Configuration;
+import javax.security.auth.login.LoginContext;
 import java.io.IOException;
-import java.util.concurrent.ConcurrentHashMap;
+import java.security.Principal;
+import java.security.PrivilegedAction;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 final class Indexer implements IndexerInf {
     private static final Logger log = LoggerFactory.getLogger(Indexer.class);
@@ -137,18 +148,62 @@ final class Indexer implements IndexerInf {
     @Override
     public synchronized String executeHttpRequest(final HttpUriRequest req) {
         CloseableHttpResponse resp;
-        try {
-            resp = httpClient.execute(req, context);
-        } catch (Exception ex) {
-            logBackPressure();
-            log.error("encountered io exception", ex);
-            throw new HecException("encountered exception when post data", ex);
-        }
+        if (!SplunkSinkConnectorConfig.kerberosPrincipal().isEmpty()) {
+            Configuration config = new Configuration() {
+                @SuppressWarnings("serial")
+                @Override
+                public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
+                    return new AppConfigurationEntry[] { new AppConfigurationEntry("com.sun.security.auth.module.Krb5LoginModule",
+                        AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, new HashMap<String, Object>() {
+                        {
+                            put("useTicketCache", "false");
+                            put("useKeyTab", "true");
+                            put("keyTab", SplunkSinkConnectorConfig.kerberosKeytabLocation());
+                            //Krb5 in GSS API needs to be refreshed so it does not throw the error
+                            //Specified version of key is not available
+                            put("refreshKrb5Config", "true");
+                            put("principal", SplunkSinkConnectorConfig.kerberosPrincipal());
+                            put("storeKey", "false");
+                            put("doNotPrompt", "true");
+                            put("isInitiator", "true");
+                            put("debug", "true");
+                        }
+                    }) };
+                }
+            };
+            Set<Principal> princ = new HashSet<Principal>(1);
+            princ.add(new KerberosPrincipal(SplunkSinkConnectorConfig.kerberosUser()));
+            Subject sub = new Subject(false, princ, new HashSet<Object>(), new HashSet<Object>());
+            try {
+                LoginContext lc = new LoginContext("", sub, null, config);
+                lc.login();
+                Subject serviceSubject = lc.getSubject();
+                return Subject.doAs(serviceSubject, new PrivilegedAction<HttpResponse>() {
+                    HttpResponse httpResponse = null;
+                    @Override
+                    public HttpResponse run() {
+                        try {
+                            return httpClient.execute(req, context);
+                        } catch (IOException ioe) {
+                            ioe.printStackTrace();
+                        }
+                        return httpResponse;
+                    }
+                }).toString();
+            } catch (Exception le) {
+                le.printStackTrace();;
+            }
+            return null;
+        } else {
+            try {
+                resp = httpClient.execute(req, context);
+            } catch (Exception ex) {
+                logBackPressure();
+                log.error("encountered io exception", ex);
+                throw new HecException("encountered exception when post data", ex);
+            }
 
-        return readAndCloseResponse(resp);
-    }
-
-    private String readAndCloseResponse(CloseableHttpResponse resp) {
+            return readAndCloseResponse(resp);DCloseResponse(CloseableHttpResponse resp) {
         String respPayload;
         HttpEntity entity = resp.getEntity();
         try {

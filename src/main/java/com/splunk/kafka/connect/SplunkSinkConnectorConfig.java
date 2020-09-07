@@ -17,6 +17,7 @@ package com.splunk.kafka.connect;
 
 import com.splunk.hecclient.HecConfig;
 import org.apache.kafka.common.config.ConfigException;
+import org.apache.kafka.common.config.types.Password;
 import org.apache.kafka.connect.sink.SinkConnector;
 import org.apache.kafka.common.config.AbstractConfig;
 import org.apache.kafka.common.config.ConfigDef;
@@ -36,6 +37,10 @@ public final class SplunkSinkConnectorConfig extends AbstractConfig {
     static final String INDEX_CONF = "splunk.indexes";
     static final String SOURCE_CONF = "splunk.sources";
     static final String SOURCETYPE_CONF = "splunk.sourcetypes";
+    // Kerberos config
+    static final String KERBEROS_PRINCIPAL = "kerb.principal";
+    static final String KERBEROS_USER = "kerb.user";
+    static final String KERBEROS_KEYTAB_LOCATION = "kerb.keytab.location";
 
     static final String TOTAL_HEC_CHANNEL_CONF = "splunk.hec.total.channels";
     static final String MAX_HTTP_CONNECTION_PER_CHANNEL_CONF = "splunk.hec.max.http.connection.per.channel";
@@ -161,6 +166,11 @@ public final class SplunkSinkConnectorConfig extends AbstractConfig {
     static final String HEADER_SOURCETYPE_DOC = "Header to use for Splunk Header Sourcetype";
     static final String HEADER_HOST_DOC = "Header to use for Splunk Header Host";
 
+    static final String KERBEROS_PRINCIPAL_DOC = "Kerberos principal";
+    static final String KERBEROS_USER_DOC = "Kerberos user";
+    static final String KERBEROS_KEYTAB_LOCATION_DOC = "Kerberos ketab";
+    static final String KERBEROS_PASSWORD_DOC = "Kerberos password";
+
     final String splunkToken;
     final String splunkURI;
     final Map<String, Map<String, String>> topicMetas;
@@ -203,6 +213,11 @@ public final class SplunkSinkConnectorConfig extends AbstractConfig {
     final String headerSourcetype;
     final String headerHost;
 
+    static String kerberosPrincipal;
+    static String kerberosUser;
+    static Password kerberosPassword;
+    static String kerberosKeytabLocation;
+
     SplunkSinkConnectorConfig(Map<String, String> taskConfig) {
         super(conf(), taskConfig);
         splunkToken = getPassword(TOKEN_CONF).value();
@@ -239,6 +254,9 @@ public final class SplunkSinkConnectorConfig extends AbstractConfig {
         headerSource = getString(HEADER_SOURCE_CONF);
         headerSourcetype = getString(HEADER_SOURCETYPE_CONF);
         headerHost = getString(HEADER_HOST_CONF);
+        kerberosPrincipal = getString(KERBEROS_PRINCIPAL);
+        kerberosUser = getString(KERBEROS_USER);
+        kerberosKeytabLocation = getString(KERBEROS_KEYTAB_LOCATION);
     }
 
     public static ConfigDef conf() {
@@ -274,7 +292,10 @@ public final class SplunkSinkConnectorConfig extends AbstractConfig {
                 .define(HEADER_INDEX_CONF, ConfigDef.Type.STRING, "splunk.header.index", ConfigDef.Importance.MEDIUM, HEADER_INDEX_DOC)
                 .define(HEADER_SOURCE_CONF, ConfigDef.Type.STRING, "splunk.header.source", ConfigDef.Importance.MEDIUM, HEADER_SOURCE_DOC)
                 .define(HEADER_SOURCETYPE_CONF, ConfigDef.Type.STRING, "splunk.header.sourcetype", ConfigDef.Importance.MEDIUM, HEADER_SOURCETYPE_DOC)
-                .define(HEADER_HOST_CONF, ConfigDef.Type.STRING, "splunk.header.host", ConfigDef.Importance.MEDIUM, HEADER_HOST_DOC);
+                .define(HEADER_HOST_CONF, ConfigDef.Type.STRING, "splunk.header.host", ConfigDef.Importance.MEDIUM, HEADER_HOST_DOC)
+                .define(KERBEROS_PRINCIPAL, ConfigDef.Type.STRING, "", ConfigDef.Importance.MEDIUM, KERBEROS_PRINCIPAL_DOC)
+                .define(KERBEROS_USER, ConfigDef.Type.STRING, "", ConfigDef.Importance.MEDIUM, KERBEROS_USER_DOC)
+                .define(KERBEROS_KEYTAB_LOCATION, ConfigDef.Type.STRING, "", ConfigDef.Importance.MEDIUM, KERBEROS_KEYTAB_LOCATION_DOC);
     }
     /**
      Configuration Method to setup all settings related to Splunk HEC Client
@@ -404,5 +425,17 @@ public final class SplunkSinkConnectorConfig extends AbstractConfig {
             idx += 1;
         }
         return metaMap;
+    }
+
+    public static String kerberosPrincipal() {
+        return kerberosPrincipal;
+    }
+
+    public static String kerberosUser() {
+        return kerberosUser;
+    }
+
+    public static String kerberosKeytabLocation() {
+        return kerberosKeytabLocation;
     }
 }
