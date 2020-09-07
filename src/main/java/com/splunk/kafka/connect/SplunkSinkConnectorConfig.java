@@ -169,7 +169,6 @@ public final class SplunkSinkConnectorConfig extends AbstractConfig {
     static final String KERBEROS_PRINCIPAL_DOC = "Kerberos principal";
     static final String KERBEROS_USER_DOC = "Kerberos user";
     static final String KERBEROS_KEYTAB_LOCATION_DOC = "Kerberos ketab";
-    static final String KERBEROS_PASSWORD_DOC = "Kerberos password";
 
     final String splunkToken;
     final String splunkURI;
@@ -215,7 +214,6 @@ public final class SplunkSinkConnectorConfig extends AbstractConfig {
 
     static String kerberosPrincipal;
     static String kerberosUser;
-    static Password kerberosPassword;
     static String kerberosKeytabLocation;
 
     SplunkSinkConnectorConfig(Map<String, String> taskConfig) {

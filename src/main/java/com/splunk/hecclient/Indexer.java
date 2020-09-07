@@ -203,7 +203,11 @@ final class Indexer implements IndexerInf {
                 throw new HecException("encountered exception when post data", ex);
             }
 
-            return readAndCloseResponse(resp);DCloseResponse(CloseableHttpResponse resp) {
+            return readAndCloseResponse(resp);
+        }
+    }
+
+    private String readAndCloseResponse(CloseableHttpResponse resp) {
         String respPayload;
         HttpEntity entity = resp.getEntity();
         try {
