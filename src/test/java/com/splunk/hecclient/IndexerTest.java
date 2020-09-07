@@ -15,23 +15,23 @@
  */
 package com.splunk.hecclient;
 
-import com.splunk.kafka.connect.SplunkSinkConnectorConfig;
+import java.util.Collections;
+
 import org.apache.http.Header;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
-
-import java.util.Collections;
 
 public class IndexerTest {
     private static final String baseUrl =  "https://localhost:8088";
     private static final String token =  "mytoken";
+    private static final HecConfig hecConfig = 
+        new HecConfig(Collections.emptyList(), "")
+        .setKerberosPrincipal("");
 
     @Test
     public void getHeaders() {
-        Indexer indexer = new Indexer(baseUrl, token, null, null,
-            new HecConfig(Collections.emptyList(), ""));
+        Indexer indexer = new Indexer(baseUrl, token, null, null, hecConfig);
 
         Header[] headers = indexer.getHeaders();
         Assert.assertEquals(3, headers.length);
@@ -68,8 +68,7 @@ public class IndexerTest {
 
     @Test
     public void getterSetter() {
-        Indexer indexer = new Indexer(baseUrl, token, null, null,
-        new HecConfig(Collections.emptyList(), ""));
+        Indexer indexer = new Indexer(baseUrl, token, null, null,hecConfig);
 
         Assert.assertEquals(baseUrl, indexer.getBaseUrl());
         Assert.assertEquals(token, indexer.getToken());
@@ -80,8 +79,7 @@ public class IndexerTest {
 
     @Test
     public void toStr() {
-        Indexer indexer = new Indexer(baseUrl, token, null, null,
-            new HecConfig(Collections.emptyList(), ""));
+        Indexer indexer = new Indexer(baseUrl, token, null, null, hecConfig);
         Assert.assertEquals(baseUrl, indexer.toString());
     }
 
@@ -94,7 +92,7 @@ public class IndexerTest {
             }
             PollerMock poller = new PollerMock();
 
-            Indexer indexer = new Indexer(baseUrl, token, client, poller, new HecConfig(Collections.emptyList(), ""));
+            Indexer indexer = new Indexer(baseUrl, token, client, poller, hecConfig);
             EventBatch batch = UnitUtil.createBatch();
             boolean result = indexer.send(batch);
             Assert.assertTrue(result);
@@ -146,7 +144,7 @@ public class IndexerTest {
     private Indexer assertFailure(CloseableHttpClient client) {
         PollerMock poller = new PollerMock();
 
-        Indexer indexer = new Indexer(baseUrl, token, client, poller, new HecConfig(Collections.emptyList(), ""));
+        Indexer indexer = new Indexer(baseUrl, token, client, poller, hecConfig);
         EventBatch batch = UnitUtil.createBatch();
         boolean result = indexer.send(batch);
         Assert.assertFalse(result);
