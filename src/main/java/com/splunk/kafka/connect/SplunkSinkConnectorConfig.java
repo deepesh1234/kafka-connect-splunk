@@ -16,6 +16,10 @@
 package com.splunk.kafka.connect;
 
 import com.splunk.hecclient.HecConfig;
+
+import io.confluent.connect.utils.Strings;
+import io.confluent.connect.utils.validators.all.ConfigValidationResult;
+
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.connect.sink.SinkConnector;
 import org.apache.kafka.common.config.AbstractConfig;
@@ -448,8 +452,6 @@ public final class SplunkSinkConnectorConfig extends AbstractConfig {
             return;
         }
 
-        // If any of the SSL configuration is not
-        // empty then it must have set all other SSL configs
         result.recordErrors(
             String.format(
                 "%s, %s and %s are required to be configured for Kerberos authentication. ",

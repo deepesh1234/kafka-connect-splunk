@@ -16,6 +16,10 @@
 package com.splunk.kafka.connect;
 
 import com.splunk.kafka.connect.VersionUtils;
+
+import io.confluent.connect.utils.validators.all.ConfigValidation;
+
+import org.apache.kafka.common.config.Config;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.sink.SinkConnector;
