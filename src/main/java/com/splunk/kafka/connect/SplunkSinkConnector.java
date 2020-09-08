@@ -66,4 +66,13 @@ public final class SplunkSinkConnector extends SinkConnector {
     public ConfigDef config() {
         return SplunkSinkConnectorConfig.conf();
     }
+
+    @Override
+    public Config validate(Map<String, String> connectorConfigs) {
+        return new ConfigValidation(
+            config(),
+            connectorConfigs,
+            SplunkSinkConnectorConfig::validateKerberosConfigs
+        ).validate();
+    }
 }

@@ -426,4 +426,40 @@ public final class SplunkSinkConnectorConfig extends AbstractConfig {
         }
         return metaMap;
     }
+
+    protected static void validateKerberosConfigs(Map<String, Object> configs, ConfigValidationResult result) {
+        String kerberosKeytabLocation =
+            (String) configs.get(KERBEROS_KEYTAB_LOCATION);
+        String kerberosUser =
+            (String) configs.get(KERBEROS_USER);
+        String kerberosPrincipal = (String) configs.get(KERBEROS_PRINCIPAL);
+
+        if (Strings.isNotEmpty(kerberosKeytabLocation)
+            && Strings.isNotEmpty(kerberosPrincipal)
+            && Strings.isNotEmpty(kerberosUser)
+        ) {
+            return;
+        }
+
+        if (kerberosKeytabLocation.isEmpty()
+            && kerberosPrincipal.isEmpty()
+            && kerberosUser.isEmpty()
+        ) {
+            return;
+        }
+
+        // If any of the SSL configuration is not
+        // empty then it must have set all other SSL configs
+        result.recordErrors(
+            String.format(
+                "%s, %s and %s are required to be configured for Kerberos authentication. ",
+                KERBEROS_USER,
+                KERBEROS_PRINCIPAL,
+                KERBEROS_KEYTAB_LOCATION
+            ),
+            KERBEROS_USER,
+            KERBEROS_PRINCIPAL,
+            KERBEROS_KEYTAB_LOCATION
+        );
+    }
 }
