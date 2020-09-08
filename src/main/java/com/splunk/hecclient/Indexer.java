@@ -188,9 +188,9 @@ final class Indexer implements IndexerInf {
                 LoginContext lc = new LoginContext("", sub, null, config);
                 lc.login();
                 Subject serviceSubject = lc.getSubject();
-                return Subject.doAs(serviceSubject, new PrivilegedAction<HttpResponse>() {
+                resp = Subject.doAs(serviceSubject, new PrivilegedAction<CloseableHttpResponse>() {
                     @Override
-                    public HttpResponse run() {
+                    public CloseableHttpResponse run() {
                         try {
                             return httpClient.execute(req, context);
                         } catch (IOException ex) {
@@ -198,7 +198,7 @@ final class Indexer implements IndexerInf {
                             throw new HecException("encountered exception when post data", ex);
                         }
                     }
-                }).toString();
+                });
             } catch (Exception le) {
                 throw new HecException("encountered exception when authenticating to kerberos", le);
             }
