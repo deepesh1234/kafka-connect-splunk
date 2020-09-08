@@ -194,12 +194,13 @@ final class Indexer implements IndexerInf {
                         try {
                             return httpClient.execute(req, context);
                         } catch (IOException ex) {
-                            throw new ConnectException("Unable to execute HttpClient request", ex);
+                            logBackPressure();
+                            throw new HecException("encountered exception when post data", ex);
                         }
                     }
                 }).toString();
             } catch (Exception le) {
-                throw new ConnectException("Unable to authenticate with kerberos server", le);
+                throw new HecException("encountered exception when authenticating to kerberos", le);
             }
         } else {
             try {
@@ -208,9 +209,8 @@ final class Indexer implements IndexerInf {
                 logBackPressure();
                 throw new HecException("encountered exception when post data", ex);
             }
-
-            return readAndCloseResponse(resp);
         }
+        return readAndCloseResponse(resp);
     }
 
     private String readAndCloseResponse(CloseableHttpResponse resp) {

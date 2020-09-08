@@ -191,7 +191,6 @@ public final class HecConfig {
     }
 
     public boolean kerberosAuthEnabled() {
-        return !kerberosPrincipal().isEmpty() && !kerberosKeytabLocation().isEmpty()
-            && !kerberosUser().isEmpty();
+        return !kerberosPrincipal().isEmpty();
     }
 }
