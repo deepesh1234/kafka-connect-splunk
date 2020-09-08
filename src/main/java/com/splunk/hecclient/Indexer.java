@@ -27,6 +27,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
+import org.apache.kafka.connect.errors.ConnectException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +47,7 @@ final class Indexer implements IndexerInf {
     private static final Logger log = LoggerFactory.getLogger(Indexer.class);
 
     private HecConfig hecConfig;
+    private Configuration config;
     private CloseableHttpClient httpClient;
     private HttpContext context;
     private String baseUrl;
@@ -154,29 +156,31 @@ final class Indexer implements IndexerInf {
     @Override
     public synchronized String executeHttpRequest(final HttpUriRequest req) {
         CloseableHttpResponse resp;
-        if (!hecConfig.kerberosPrincipal().isEmpty()) {
-            Configuration config = new Configuration() {
-                @SuppressWarnings("serial")
-                @Override
-                public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
-                    return new AppConfigurationEntry[] { new AppConfigurationEntry("com.sun.security.auth.module.Krb5LoginModule",
-                        AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, new HashMap<String, Object>() {
-                        {
-                            put("useTicketCache", "false");
-                            put("useKeyTab", "true");
-                            put("keyTab", hecConfig.kerberosKeytabLocation());
-                            //Krb5 in GSS API needs to be refreshed so it does not throw the error
-                            //Specified version of key is not available
-                            put("refreshKrb5Config", "true");
-                            put("principal", hecConfig.kerberosPrincipal());
-                            put("storeKey", "false");
-                            put("doNotPrompt", "true");
-                            put("isInitiator", "true");
-                            put("debug", "true");
-                        }
-                    }) };
-                }
-            };
+        if (hecConfig.kerberosAuthEnabled()) {
+            if (config == null) {
+                config = new Configuration() {
+                    @SuppressWarnings("serial")
+                    @Override
+                    public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
+                        return new AppConfigurationEntry[]{new AppConfigurationEntry("com.sun.security.auth.module.Krb5LoginModule",
+                            AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, new HashMap<String, Object>() {
+                            {
+                                put("useTicketCache", "false");
+                                put("useKeyTab", "true");
+                                put("keyTab", hecConfig.kerberosKeytabLocation());
+                                //Krb5 in GSS API needs to be refreshed so it does not throw the error
+                                //Specified version of key is not available
+                                put("refreshKrb5Config", "true");
+                                put("principal", hecConfig.kerberosPrincipal());
+                                put("storeKey", "false");
+                                put("doNotPrompt", "true");
+                                put("isInitiator", "true");
+                                put("debug", "true");
+                            }
+                        })};
+                    }
+                };
+            }
             Set<Principal> princ = new HashSet<Principal>(1);
             princ.add(new KerberosPrincipal(hecConfig.kerberosUser()));
             Subject sub = new Subject(false, princ, new HashSet<Object>(), new HashSet<Object>());
@@ -185,27 +189,23 @@ final class Indexer implements IndexerInf {
                 lc.login();
                 Subject serviceSubject = lc.getSubject();
                 return Subject.doAs(serviceSubject, new PrivilegedAction<HttpResponse>() {
-                    HttpResponse httpResponse = null;
                     @Override
                     public HttpResponse run() {
                         try {
                             return httpClient.execute(req, context);
-                        } catch (IOException ioe) {
-                            ioe.printStackTrace();
+                        } catch (IOException ex) {
+                            throw new ConnectException("Unable to execute HttpClient request", ex);
                         }
-                        return httpResponse;
                     }
                 }).toString();
             } catch (Exception le) {
-                le.printStackTrace();;
+                throw new ConnectException("Unable to authenticate with kerberos server", le);
             }
-            return null;
         } else {
             try {
                 resp = httpClient.execute(req, context);
             } catch (Exception ex) {
                 logBackPressure();
-                log.error("encountered io exception", ex);
                 throw new HecException("encountered exception when post data", ex);
             }
 

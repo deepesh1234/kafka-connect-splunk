@@ -189,4 +189,9 @@ public final class HecConfig {
         enableChannelTracking = trackChannel;
         return this;
     }
+
+    public boolean kerberosAuthEnabled() {
+        return !kerberosPrincipal().isEmpty() && !kerberosKeytabLocation().isEmpty()
+            && !kerberosUser().isEmpty();
+    }
 }

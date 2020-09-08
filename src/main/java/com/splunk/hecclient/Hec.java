@@ -15,7 +15,6 @@
  */
 package com.splunk.hecclient;
 
-import com.splunk.kafka.connect.SplunkSinkConnectorConfig;
 import org.apache.http.impl.client.CloseableHttpClient;
 
 import java.io.FileInputStream;
@@ -29,6 +28,7 @@ import java.security.SecureRandom;
 import java.security.KeyManagementException;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.kafka.connect.errors.ConnectException;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -264,18 +264,11 @@ public class Hec implements HecInf {
     */
     public static CloseableHttpClient createHttpClient(final HecConfig config) {
         int poolSizePerDest = config.getMaxHttpConnectionPerChannel();
-        if (!config.kerberosPrincipal().isEmpty()
-            && !config.kerberosKeytabLocation().isEmpty()
-            && !config.kerberosUser().isEmpty()
-        ) {
+        if (config.kerberosAuthEnabled()) {
           try {
             return (CloseableHttpClient) new HttpClientBuilder().buildKerberosClient();
-          } catch (KeyStoreException e) {
-            e.printStackTrace();
-          } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-          } catch (KeyManagementException e) {
-            e.printStackTrace();
+          } catch (KeyStoreException | NoSuchAlgorithmException | KeyManagementException ex) {
+            throw new ConnectException("Unable to build Kerberos Client", ex);
           }
         }
         // Code block for default client construction
