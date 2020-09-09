@@ -41,9 +41,9 @@ public final class SplunkSinkConnectorConfig extends AbstractConfig {
     static final String SOURCE_CONF = "splunk.sources";
     static final String SOURCETYPE_CONF = "splunk.sourcetypes";
     // Kerberos config
-    static final String KERBEROS_PRINCIPAL = "kerb.principal";
-    static final String KERBEROS_USER = "kerb.user";
-    static final String KERBEROS_KEYTAB_LOCATION = "kerb.keytab.location";
+    static final String KERBEROS_PRINCIPAL_CONF = "kerb.principal";
+    static final String KERBEROS_USER_CONF = "kerb.user";
+    static final String KERBEROS_KEYTAB_LOCATION_CONF = "kerb.keytab.location";
 
     static final String TOTAL_HEC_CHANNEL_CONF = "splunk.hec.total.channels";
     static final String MAX_HTTP_CONNECTION_PER_CHANNEL_CONF = "splunk.hec.max.http.connection.per.channel";
@@ -255,9 +255,9 @@ public final class SplunkSinkConnectorConfig extends AbstractConfig {
         headerSource = getString(HEADER_SOURCE_CONF);
         headerSourcetype = getString(HEADER_SOURCETYPE_CONF);
         headerHost = getString(HEADER_HOST_CONF);
-        kerberosPrincipal = getString(KERBEROS_PRINCIPAL);
-        kerberosUser = getString(KERBEROS_USER);
-        kerberosKeytabLocation = getString(KERBEROS_KEYTAB_LOCATION);
+        kerberosPrincipal = getString(KERBEROS_PRINCIPAL_CONF);
+        kerberosUser = getString(KERBEROS_USER_CONF);
+        kerberosKeytabLocation = getString(KERBEROS_KEYTAB_LOCATION_CONF);
     }
 
     public static ConfigDef conf() {
@@ -294,9 +294,9 @@ public final class SplunkSinkConnectorConfig extends AbstractConfig {
                 .define(HEADER_SOURCE_CONF, ConfigDef.Type.STRING, "splunk.header.source", ConfigDef.Importance.MEDIUM, HEADER_SOURCE_DOC)
                 .define(HEADER_SOURCETYPE_CONF, ConfigDef.Type.STRING, "splunk.header.sourcetype", ConfigDef.Importance.MEDIUM, HEADER_SOURCETYPE_DOC)
                 .define(HEADER_HOST_CONF, ConfigDef.Type.STRING, "splunk.header.host", ConfigDef.Importance.MEDIUM, HEADER_HOST_DOC)
-                .define(KERBEROS_PRINCIPAL, ConfigDef.Type.STRING, "", ConfigDef.Importance.MEDIUM, KERBEROS_PRINCIPAL_DOC)
-                .define(KERBEROS_USER, ConfigDef.Type.STRING, "", ConfigDef.Importance.MEDIUM, KERBEROS_USER_DOC)
-                .define(KERBEROS_KEYTAB_LOCATION, ConfigDef.Type.STRING, "", ConfigDef.Importance.MEDIUM, KERBEROS_KEYTAB_LOCATION_DOC);
+                .define(KERBEROS_PRINCIPAL_CONF, ConfigDef.Type.STRING, "", ConfigDef.Importance.MEDIUM, KERBEROS_PRINCIPAL_DOC)
+                .define(KERBEROS_USER_CONF, ConfigDef.Type.STRING, "", ConfigDef.Importance.MEDIUM, KERBEROS_USER_DOC)
+                .define(KERBEROS_KEYTAB_LOCATION_CONF, ConfigDef.Type.STRING, "", ConfigDef.Importance.MEDIUM, KERBEROS_KEYTAB_LOCATION_DOC);
     }
     /**
      Configuration Method to setup all settings related to Splunk HEC Client
@@ -433,10 +433,10 @@ public final class SplunkSinkConnectorConfig extends AbstractConfig {
 
     protected static void validateKerberosConfigs(Map<String, Object> configs, ConfigValidationResult result) {
         String kerberosKeytabLocation =
-            (String) configs.get(KERBEROS_KEYTAB_LOCATION);
+            (String) configs.get(KERBEROS_KEYTAB_LOCATION_CONF);
         String kerberosUser =
-            (String) configs.get(KERBEROS_USER);
-        String kerberosPrincipal = (String) configs.get(KERBEROS_PRINCIPAL);
+            (String) configs.get(KERBEROS_USER_CONF);
+        String kerberosPrincipal = (String) configs.get(KERBEROS_PRINCIPAL_CONF);
 
         if (Strings.isNotEmpty(kerberosKeytabLocation)
             && Strings.isNotEmpty(kerberosPrincipal)
@@ -455,13 +455,13 @@ public final class SplunkSinkConnectorConfig extends AbstractConfig {
         result.recordErrors(
             String.format(
                 "%s, %s and %s are required to be configured for Kerberos authentication. ",
-                KERBEROS_USER,
-                KERBEROS_PRINCIPAL,
-                KERBEROS_KEYTAB_LOCATION
+                KERBEROS_USER_CONF,
+                KERBEROS_PRINCIPAL_CONF,
+                KERBEROS_KEYTAB_LOCATION_CONF
             ),
-            KERBEROS_USER,
-            KERBEROS_PRINCIPAL,
-            KERBEROS_KEYTAB_LOCATION
+            KERBEROS_USER_CONF,
+            KERBEROS_PRINCIPAL_CONF,
+            KERBEROS_KEYTAB_LOCATION_CONF
         );
     }
 }

@@ -31,7 +31,7 @@ public class IndexerTest {
 
     @Test
     public void getHeaders() {
-        Indexer indexer = new Indexer(baseUrl, token, null, null, hecConfig);
+        Indexer indexer = new Indexer(baseUrl, null, null, hecConfig);
 
         Header[] headers = indexer.getHeaders();
         Assert.assertEquals(3, headers.length);
@@ -68,7 +68,7 @@ public class IndexerTest {
 
     @Test
     public void getterSetter() {
-        Indexer indexer = new Indexer(baseUrl, token, null, null,hecConfig);
+        Indexer indexer = new Indexer(baseUrl, null, null,hecConfig);
 
         Assert.assertEquals(baseUrl, indexer.getBaseUrl());
         Assert.assertEquals(token, indexer.getToken());
@@ -79,7 +79,7 @@ public class IndexerTest {
 
     @Test
     public void toStr() {
-        Indexer indexer = new Indexer(baseUrl, token, null, null, hecConfig);
+        Indexer indexer = new Indexer(baseUrl, null, null, hecConfig);
         Assert.assertEquals(baseUrl, indexer.toString());
     }
 
@@ -92,7 +92,7 @@ public class IndexerTest {
             }
             PollerMock poller = new PollerMock();
 
-            Indexer indexer = new Indexer(baseUrl, token, client, poller, hecConfig);
+            Indexer indexer = new Indexer(baseUrl, client, poller, hecConfig);
             EventBatch batch = UnitUtil.createBatch();
             boolean result = indexer.send(batch);
             Assert.assertTrue(result);
@@ -144,7 +144,7 @@ public class IndexerTest {
     private Indexer assertFailure(CloseableHttpClient client) {
         PollerMock poller = new PollerMock();
 
-        Indexer indexer = new Indexer(baseUrl, token, client, poller, hecConfig);
+        Indexer indexer = new Indexer(baseUrl, client, poller, hecConfig);
         EventBatch batch = UnitUtil.createBatch();
         boolean result = indexer.send(batch);
         Assert.assertFalse(result);

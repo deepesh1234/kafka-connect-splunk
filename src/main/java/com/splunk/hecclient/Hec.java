@@ -197,7 +197,7 @@ public class Hec implements HecInf {
     public Hec(HecConfig config, CloseableHttpClient httpClient, Poller poller, LoadBalancerInf loadBalancer) {
         for (int i = 0; i < config.getTotalChannels(); ) {
             for (String uri : config.getUris()) {
-                Indexer indexer = new Indexer(uri, config.getToken(), httpClient, poller, config);
+                Indexer indexer = new Indexer(uri, httpClient, poller, config);
                 indexer.setKeepAlive(config.getHttpKeepAlive());
                 loadBalancer.add(indexer.getChannel().setTracking(config.getEnableChannelTracking()));
                 i++;
@@ -266,7 +266,7 @@ public class Hec implements HecInf {
         int poolSizePerDest = config.getMaxHttpConnectionPerChannel();
         if (config.kerberosAuthEnabled()) {
           try {
-            return (CloseableHttpClient) new HttpClientBuilder().buildKerberosClient();
+            return new HttpClientBuilder().buildKerberosClient();
           } catch (KeyStoreException | NoSuchAlgorithmException | KeyManagementException ex) {
             throw new ConnectException("Unable to build Kerberos Client", ex);
           }

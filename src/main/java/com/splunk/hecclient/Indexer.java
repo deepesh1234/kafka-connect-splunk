@@ -63,13 +63,12 @@ final class Indexer implements IndexerInf {
     // Indexer doesn't own client, ack poller
     public Indexer(
         String baseUrl,
-        String hecToken,
         CloseableHttpClient client,
         Poller poller,
         HecConfig config) {
         this.httpClient = client;
         this.baseUrl = baseUrl;
-        this.hecToken = hecToken;
+        this.hecToken = config.getToken();
         this.poller = poller;
         this.context = HttpClientContext.create();
         backPressure = 0;
@@ -158,28 +157,7 @@ final class Indexer implements IndexerInf {
         CloseableHttpResponse resp;
         if (hecConfig.kerberosAuthEnabled()) {
             if (config == null) {
-                config = new Configuration() {
-                    @SuppressWarnings("serial")
-                    @Override
-                    public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
-                        return new AppConfigurationEntry[]{new AppConfigurationEntry("com.sun.security.auth.module.Krb5LoginModule",
-                            AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, new HashMap<String, Object>() {
-                            {
-                                put("useTicketCache", "false");
-                                put("useKeyTab", "true");
-                                put("keyTab", hecConfig.kerberosKeytabLocation());
-                                //Krb5 in GSS API needs to be refreshed so it does not throw the error
-                                //Specified version of key is not available
-                                put("refreshKrb5Config", "true");
-                                put("principal", hecConfig.kerberosPrincipal());
-                                put("storeKey", "false");
-                                put("doNotPrompt", "true");
-                                put("isInitiator", "true");
-                                put("debug", "true");
-                            }
-                        })};
-                    }
-                };
+                defineKerberosConfigs();
             }
             Set<Principal> princ = new HashSet<Principal>(1);
             princ.add(new KerberosPrincipal(hecConfig.kerberosUser()));
@@ -195,12 +173,13 @@ final class Indexer implements IndexerInf {
                             return httpClient.execute(req, context);
                         } catch (IOException ex) {
                             logBackPressure();
-                            throw new HecException("encountered exception when post data", ex);
+                            throw new HecException("Encountered exception while posting data.", ex);
                         }
                     }
                 });
             } catch (Exception le) {
-                throw new HecException("encountered exception when authenticating to kerberos", le);
+                throw new HecException(
+                    "Encountered exception while authenticating via Kerberos.", le);
             }
         } else {
             try {
@@ -211,6 +190,31 @@ final class Indexer implements IndexerInf {
             }
         }
         return readAndCloseResponse(resp);
+    }
+
+    private void defineKerberosConfigs() {
+        config = new Configuration() {
+            @SuppressWarnings("serial")
+            @Override
+            public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
+                return new AppConfigurationEntry[]{new AppConfigurationEntry("com.sun.security.auth.module.Krb5LoginModule",
+                    AppConfigurationEntry.LoginModuleControlFlag.REQUIRED, new HashMap<String, Object>() {
+                    {
+                        put("useTicketCache", "false");
+                        put("useKeyTab", "true");
+                        put("keyTab", hecConfig.kerberosKeytabLocation());
+                        //Krb5 in GSS API needs to be refreshed so it does not throw the error
+                        //Specified version of key is not available
+                        put("refreshKrb5Config", "true");
+                        put("principal", hecConfig.kerberosPrincipal());
+                        put("storeKey", "false");
+                        put("doNotPrompt", "true");
+                        put("isInitiator", "true");
+                        put("debug", "true");
+                    }
+                })};
+            }
+        };
     }
 
     private String readAndCloseResponse(CloseableHttpResponse resp) {
