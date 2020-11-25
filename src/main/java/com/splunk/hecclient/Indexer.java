@@ -36,6 +36,7 @@ import javax.security.auth.kerberos.KerberosPrincipal;
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginContext;
+import javax.security.auth.login.LoginException;
 import java.io.IOException;
 import java.security.Principal;
 import java.security.PrivilegedAction;
@@ -59,6 +60,7 @@ final class Indexer implements IndexerInf {
     private long backPressure;
     private long lastBackPressure;
     private long backPressureThreshhold = 60 * 1000; // 1 min
+    private static Subject serviceSubject;
 
     // Indexer doesn't own client, ack poller
     public Indexer(
@@ -156,16 +158,13 @@ final class Indexer implements IndexerInf {
     public synchronized String executeHttpRequest(final HttpUriRequest req) {
         CloseableHttpResponse resp;
         if (hecConfig.kerberosAuthEnabled()) {
-            if (config == null) {
-                defineKerberosConfigs();
-            }
-            Set<Principal> princ = new HashSet<Principal>(1);
-            princ.add(new KerberosPrincipal(hecConfig.kerberosUser()));
-            Subject sub = new Subject(false, princ, new HashSet<Object>(), new HashSet<Object>());
             try {
-                LoginContext lc = new LoginContext("", sub, null, config);
-                lc.login();
-                Subject serviceSubject = lc.getSubject();
+                if (config == null) {
+                    defineKerberosConfigs();
+                }
+                if(serviceSubject != null){
+                    serviceSubject = getSubject();
+                }
                 resp = Subject.doAs(serviceSubject, new PrivilegedAction<CloseableHttpResponse>() {
                     @Override
                     public CloseableHttpResponse run() {
@@ -190,6 +189,16 @@ final class Indexer implements IndexerInf {
             }
         }
         return readAndCloseResponse(resp);
+    }
+
+    private Subject getSubject() throws LoginException {
+        Set<Principal> princ = new HashSet<Principal>(1);
+        princ.add(new KerberosPrincipal(hecConfig.kerberosUser()));
+        Subject sub = new Subject(false, princ, new HashSet<Object>(), new HashSet<Object>());
+        LoginContext lc = new LoginContext("", sub, null, config);
+        lc.login();
+        Subject serviceSubject = lc.getSubject();
+        return serviceSubject;
     }
 
     private void defineKerberosConfigs() {
