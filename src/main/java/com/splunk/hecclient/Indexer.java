@@ -162,7 +162,7 @@ final class Indexer implements IndexerInf {
                 if (config == null) {
                     defineKerberosConfigs();
                 }
-                if(serviceSubject != null){
+                if(serviceSubject == null){
                     serviceSubject = getSubject();
                 }
                 resp = Subject.doAs(serviceSubject, new PrivilegedAction<CloseableHttpResponse>() {
