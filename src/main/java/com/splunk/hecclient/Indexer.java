@@ -75,6 +75,7 @@ final class Indexer implements IndexerInf {
         this.context = HttpClientContext.create();
         backPressure = 0;
         this.hecConfig = config;
+        serviceSubject = null;
         channel = new HecChannel(this);
 
         // Init headers
