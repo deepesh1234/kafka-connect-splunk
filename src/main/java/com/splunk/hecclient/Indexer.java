@@ -87,7 +87,7 @@ final class Indexer implements IndexerInf {
         if(hecConfig.kerberosAuthEnabled()) {
             defineKerberosConfigs();
             try {
-                getSubject();
+                serviceSubject = getSubject();
             } catch (LoginException e) {
                 throw new ConnectException("Unable to Authenticate with kerberos ", e);
             }
@@ -188,13 +188,13 @@ final class Indexer implements IndexerInf {
         return readAndCloseResponse(resp);
     }
 
-    private void getSubject() throws LoginException {
+    private Subject getSubject() throws LoginException {
         Set<Principal> princ = new HashSet<Principal>(1);
         princ.add(new KerberosPrincipal(hecConfig.kerberosUser()));
         Subject sub = new Subject(false, princ, new HashSet<Object>(), new HashSet<Object>());
         LoginContext lc = new LoginContext("", sub, null, config);
         lc.login();
-        serviceSubject = lc.getSubject();
+        return lc.getSubject();
     }
 
     private void defineKerberosConfigs() {
