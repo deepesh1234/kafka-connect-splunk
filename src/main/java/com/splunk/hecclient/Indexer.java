@@ -15,10 +15,8 @@
  */
 package com.splunk.hecclient;
 
-import com.splunk.kafka.connect.SplunkSinkConnectorConfig;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.protocol.HttpClientContext;
@@ -36,6 +34,7 @@ import javax.security.auth.kerberos.KerberosPrincipal;
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
 import javax.security.auth.login.LoginContext;
+import javax.security.auth.login.LoginException;
 import java.io.IOException;
 import java.security.Principal;
 import java.security.PrivilegedAction;
@@ -59,6 +58,7 @@ final class Indexer implements IndexerInf {
     private long backPressure;
     private long lastBackPressure;
     private long backPressureThreshhold = 60 * 1000; // 1 min
+    private static Subject serviceSubject;
 
     // Indexer doesn't own client, ack poller
     public Indexer(
@@ -73,6 +73,7 @@ final class Indexer implements IndexerInf {
         this.context = HttpClientContext.create();
         backPressure = 0;
         this.hecConfig = config;
+        serviceSubject = null;
         channel = new HecChannel(this);
 
         // Init headers
@@ -82,6 +83,15 @@ final class Indexer implements IndexerInf {
 
         keepAlive = false;
         setKeepAlive(true);
+
+        if(hecConfig.kerberosAuthEnabled()) {
+            defineKerberosConfigs();
+            try {
+                serviceSubject = getSubject();
+            } catch (LoginException e) {
+                throw new ConnectException("Unable to Authenticate with kerberos ", e);
+            }
+        }
     }
 
     public Indexer setBackPressureThreshhold(long threshhold /* milli-seconds */) {
@@ -156,31 +166,17 @@ final class Indexer implements IndexerInf {
     public synchronized String executeHttpRequest(final HttpUriRequest req) {
         CloseableHttpResponse resp;
         if (hecConfig.kerberosAuthEnabled()) {
-            if (config == null) {
-                defineKerberosConfigs();
-            }
-            Set<Principal> princ = new HashSet<Principal>(1);
-            princ.add(new KerberosPrincipal(hecConfig.kerberosUser()));
-            Subject sub = new Subject(false, princ, new HashSet<Object>(), new HashSet<Object>());
-            try {
-                LoginContext lc = new LoginContext("", sub, null, config);
-                lc.login();
-                Subject serviceSubject = lc.getSubject();
-                resp = Subject.doAs(serviceSubject, new PrivilegedAction<CloseableHttpResponse>() {
-                    @Override
-                    public CloseableHttpResponse run() {
-                        try {
-                            return httpClient.execute(req, context);
-                        } catch (IOException ex) {
-                            logBackPressure();
-                            throw new HecException("Encountered exception while posting data.", ex);
-                        }
+            resp = Subject.doAs(serviceSubject, new PrivilegedAction<CloseableHttpResponse>() {
+                @Override
+                public CloseableHttpResponse run() {
+                    try {
+                        return httpClient.execute(req, context);
+                    } catch (IOException ex) {
+                        logBackPressure();
+                        throw new HecException("Encountered exception while posting data.", ex);
                     }
-                });
-            } catch (Exception le) {
-                throw new HecException(
-                    "Encountered exception while authenticating via Kerberos.", le);
-            }
+                }
+            });
         } else {
             try {
                 resp = httpClient.execute(req, context);
@@ -190,6 +186,15 @@ final class Indexer implements IndexerInf {
             }
         }
         return readAndCloseResponse(resp);
+    }
+
+    private Subject getSubject() throws LoginException {
+        Set<Principal> princ = new HashSet<Principal>(1);
+        princ.add(new KerberosPrincipal(hecConfig.kerberosUser()));
+        Subject sub = new Subject(false, princ, new HashSet<Object>(), new HashSet<Object>());
+        LoginContext lc = new LoginContext("", sub, null, config);
+        lc.login();
+        return lc.getSubject();
     }
 
     private void defineKerberosConfigs() {
